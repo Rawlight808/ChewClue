@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, subDays } from 'date-fns'
 import { v4 as uuid } from 'uuid'
 import { cloudSaveFoodEntry } from '../cloudStore'
@@ -19,7 +19,15 @@ type DayOption = 'today' | 'yesterday'
 
 export function LogFoodPage() {
   const navigate = useNavigate()
-  const [day, setDay] = useState<DayOption>('today')
+  const [searchParams] = useSearchParams()
+
+  const [day, setDay] = useState<DayOption>(() => {
+    const dateParam = searchParams.get('date')
+    if (dateParam && dateParam === format(subDays(new Date(), 1), 'yyyy-MM-dd')) {
+      return 'yesterday'
+    }
+    return 'today'
+  })
   const [meal, setMeal] = useState<MealSlot>('breakfast')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<Set<string>>(new Set())

@@ -102,7 +102,7 @@ export function TodayPage() {
           <div className="card" style={{ marginTop: '0.75rem' }}>
             <div className="card__label">Food Log</div>
             {foods.length === 0 ? (
-              <button className="btn btn--ghost btn--full" onClick={() => navigate('/log')}>
+              <button className="btn btn--ghost btn--full" onClick={() => navigate(`/log?date=${date}`)}>
                 + Log Your First Meal
               </button>
             ) : (
@@ -136,7 +136,7 @@ export function TodayPage() {
                 <button
                   className="btn btn--ghost btn--full"
                   style={{ marginTop: '0.75rem' }}
-                  onClick={() => navigate('/log')}
+                  onClick={() => navigate(`/log?date=${date}`)}
                 >
                   + Add More
                 </button>
