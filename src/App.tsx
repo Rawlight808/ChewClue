@@ -44,7 +44,7 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, signOut }}>
-      <BrowserRouter basename="/gutcheck">
+      <BrowserRouter>
         <div className="app">
           <div className="app__content">
             <Routes>
