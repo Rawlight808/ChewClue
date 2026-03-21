@@ -36,8 +36,8 @@ export function AuthPage({ onSignIn, onSignUp }: Props) {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <span className="auth-logo">🔬</span>
-          <h1 className="auth-title">GutCheck</h1>
+          <span className="auth-logo">🔍🍽️</span>
+          <h1 className="auth-title">ChewClue</h1>
           <p className="auth-subtitle">Track food. Find triggers. Feel better.</p>
         </div>
 

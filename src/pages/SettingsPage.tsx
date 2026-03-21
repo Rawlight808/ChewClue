@@ -31,7 +31,7 @@ export function SettingsPage() {
     const result = await Notification.requestPermission()
     refreshNotif()
     if (result === 'granted') {
-      new Notification('GutCheck', { body: 'Reminders are now enabled!' })
+      new Notification('ChewClue', { body: 'Reminders are now enabled!' })
     }
   }
 

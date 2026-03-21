@@ -44,9 +44,9 @@ function checkReminders() {
   ) {
     const foods = getFoodEntriesForDate(today)
     if (foods.length === 0) {
-      notify('GutCheck', "You haven't logged any food today. Tap to add what you ate.")
+      notify('ChewClue', "You haven't logged any food today. Tap to add what you ate.")
     } else {
-      notify('GutCheck', 'Did you log everything you ate today? Tap to review.')
+      notify('ChewClue', 'Did you log everything you ate today? Tap to review.')
     }
     markSent(LAST_EVENING_KEY)
   }
@@ -59,7 +59,7 @@ function checkReminders() {
   ) {
     const checkin = getCheckinForDate(today)
     if (!checkin) {
-      notify('GutCheck', 'Good morning! How are you feeling? Tap to do your check-in.')
+      notify('ChewClue', 'Good morning! How are you feeling? Tap to do your check-in.')
     }
     markSent(LAST_MORNING_KEY)
   }
