@@ -1,31 +1,10 @@
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 
-export type FoodTag =
-  | 'dairy'
-  | 'gluten'
-  | 'bread'
-  | 'sugar'
-  | 'fried'
-  | 'spicy'
-  | 'alcohol'
-  | 'caffeine'
-  | 'processed'
-  | 'raw'
-  | 'fermented'
-  | 'nuts'
-  | 'soy'
-  | 'eggs'
-  | 'red_meat'
-  | 'chicken'
-  | 'seafood'
-  | 'fruit'
-  | 'vegetables'
-  | 'organic'
-  | 'non_organic'
-  | 'seed_oil'
-  | 'supplements'
+export type FoodTag = string
 
-export const FOOD_TAGS: { id: FoodTag; label: string; emoji: string }[] = [
+export type TagDef = { id: string; label: string; emoji: string }
+
+export const BUILT_IN_TAGS: TagDef[] = [
   { id: 'dairy', label: 'Dairy', emoji: '🧀' },
   { id: 'gluten', label: 'Gluten', emoji: '🍞' },
   { id: 'bread', label: 'Bread', emoji: '🥖' },
@@ -45,11 +24,15 @@ export const FOOD_TAGS: { id: FoodTag; label: string; emoji: string }[] = [
   { id: 'seafood', label: 'Seafood', emoji: '🐟' },
   { id: 'fruit', label: 'Fruit', emoji: '🍎' },
   { id: 'vegetables', label: 'Vegetables', emoji: '🥦' },
+  { id: 'tomato', label: 'Tomato', emoji: '🍅' },
   { id: 'organic', label: 'Organic', emoji: '🌿' },
   { id: 'non_organic', label: 'Non-Organic', emoji: '🏭' },
   { id: 'seed_oil', label: 'Seed Oil', emoji: '🫗' },
   { id: 'supplements', label: 'Supplements', emoji: '💊' },
 ]
+
+/** @deprecated Use BUILT_IN_TAGS instead */
+export const FOOD_TAGS = BUILT_IN_TAGS
 
 export type FoodEntry = {
   id: string

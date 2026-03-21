@@ -1,6 +1,7 @@
 import { format, subDays, parseISO } from 'date-fns'
-import type { DailyCheckin, FoodEntry, FoodTag, TriggerInsight } from './types'
-import { FOOD_TAGS } from './types'
+import type { DailyCheckin, FoodEntry, FoodTag, TagDef, TriggerInsight } from './types'
+import { BUILT_IN_TAGS } from './types'
+import { getCustomTags } from './customTags'
 
 type SymptomKey = 'energy' | 'pain' | 'bowel' | 'mood' | 'sleepQuality'
 
@@ -35,7 +36,16 @@ export function detectTriggers(
   const insights: TriggerInsight[] = []
   const symptoms: SymptomKey[] = ['energy', 'pain', 'bowel', 'mood', 'sleepQuality']
 
-  for (const tag of FOOD_TAGS) {
+  const allUsedTagIds = new Set<FoodTag>()
+  for (const f of foods) for (const t of f.tags) allUsedTagIds.add(t)
+
+  const allTagDefs: TagDef[] = [...BUILT_IN_TAGS, ...getCustomTags()]
+  const tagLookup = new Map(allTagDefs.map((t) => [t.id, t]))
+  for (const id of allUsedTagIds) {
+    if (!tagLookup.has(id)) tagLookup.set(id, { id, label: id, emoji: '🏷️' })
+  }
+
+  for (const tag of tagLookup.values()) {
     for (const symptom of symptoms) {
       const withTag: number[] = []
       const withoutTag: number[] = []

@@ -226,6 +226,18 @@ input, textarea, select {
   color: var(--clr-accent);
 }
 
+.tag-chip__remove {
+  margin-left: 0.15rem;
+  font-size: 0.65rem;
+  opacity: 0.5;
+  padding: 0 0.15rem;
+}
+
+.tag-chip__remove:hover {
+  opacity: 1;
+  color: var(--clr-red);
+}
+
 /* ── Form inputs ───────────────────────────────────── */
 .input {
   width: 100%;

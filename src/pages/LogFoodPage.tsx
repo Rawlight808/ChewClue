@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { format, subDays } from 'date-fns'
 import { v4 as uuid } from 'uuid'
 import { cloudSaveFoodEntry } from '../cloudStore'
-import { FOOD_TAGS } from '../types'
-import type { MealSlot, FoodTag } from '../types'
+import { BUILT_IN_TAGS } from '../types'
+import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
+import { getAutoTags } from '../autoTags'
+import type { MealSlot, TagDef } from '../types'
 
 const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -20,17 +22,69 @@ export function LogFoodPage() {
   const [day, setDay] = useState<DayOption>('today')
   const [meal, setMeal] = useState<MealSlot>('breakfast')
   const [description, setDescription] = useState('')
-  const [tags, setTags] = useState<Set<FoodTag>>(new Set())
+  const [tags, setTags] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
+  const [customTags, setCustomTags] = useState<TagDef[]>(() => getCustomTags())
+  const [showAddTag, setShowAddTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [autoApplied, setAutoApplied] = useState(false)
+
+  const allTags = useMemo(() => [...BUILT_IN_TAGS, ...customTags], [customTags])
 
   const selectedDate = day === 'today'
     ? format(new Date(), 'yyyy-MM-dd')
     : format(subDays(new Date(), 1), 'yyyy-MM-dd')
 
-  const toggleTag = (tag: FoodTag) => {
+  // Auto-tag when description changes
+  useEffect(() => {
+    if (!description.trim()) {
+      if (autoApplied) {
+        setTags(new Set())
+        setAutoApplied(false)
+      }
+      return
+    }
+
+    const suggested = getAutoTags(description)
+    if (suggested.size > 0) {
+      setTags((prev) => {
+        const next = new Set(prev)
+        for (const t of suggested) next.add(t)
+        return next
+      })
+      setAutoApplied(true)
+    }
+  }, [description])
+
+  const toggleTag = (tag: string) => {
     setTags((prev) => {
       const next = new Set(prev)
       next.has(tag) ? next.delete(tag) : next.add(tag)
+      return next
+    })
+  }
+
+  const handleAddCustomTag = () => {
+    const name = newTagName.trim()
+    if (!name) return
+    const existing = allTags.find((t) => t.label.toLowerCase() === name.toLowerCase())
+    if (existing) {
+      setTags((prev) => new Set(prev).add(existing.id))
+    } else {
+      const tag = addCustomTag(name)
+      setCustomTags(getCustomTags())
+      setTags((prev) => new Set(prev).add(tag.id))
+    }
+    setNewTagName('')
+    setShowAddTag(false)
+  }
+
+  const handleRemoveCustomTag = (id: string) => {
+    removeCustomTag(id)
+    setCustomTags(getCustomTags())
+    setTags((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
       return next
     })
   }
@@ -51,6 +105,7 @@ export function LogFoodPage() {
     setSaving(false)
     setDescription('')
     setTags(new Set())
+    setAutoApplied(false)
     navigate('/')
   }
 
@@ -97,18 +152,63 @@ export function LogFoodPage() {
           onChange={(e) => setDescription(e.target.value)}
           autoFocus
         />
+        {autoApplied && tags.size > 0 && (
+          <p style={{ fontSize: '0.75rem', color: 'var(--clr-accent)', marginTop: '0.35rem' }}>
+            Auto-tagged based on what you typed
+          </p>
+        )}
       </div>
 
       <div className="card">
-        <div className="card__label">Food Tags</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="card__label">Food Tags</div>
+          <button
+            className="btn btn--ghost"
+            style={{ fontSize: '0.78rem', padding: '0.2rem 0.5rem' }}
+            onClick={() => setShowAddTag(!showAddTag)}
+          >
+            + Custom
+          </button>
+        </div>
+
+        {showAddTag && (
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem' }}>
+            <input
+              className="input"
+              style={{ flex: 1 }}
+              placeholder="Tag name..."
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddCustomTag()}
+              autoFocus
+            />
+            <button
+              className="btn btn--primary"
+              style={{ padding: '0.4rem 0.75rem', fontSize: '0.82rem' }}
+              onClick={handleAddCustomTag}
+              disabled={!newTagName.trim()}
+            >
+              Add
+            </button>
+          </div>
+        )}
+
         <div className="tag-grid">
-          {FOOD_TAGS.map((t) => (
+          {allTags.map((t) => (
             <button
               key={t.id}
               className={`tag-chip ${tags.has(t.id) ? 'tag-chip--selected' : ''}`}
               onClick={() => toggleTag(t.id)}
             >
               {t.emoji} {t.label}
+              {t.id.startsWith('custom_') && (
+                <span
+                  className="tag-chip__remove"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveCustomTag(t.id) }}
+                >
+                  ✕
+                </span>
+              )}
             </button>
           ))}
         </div>
