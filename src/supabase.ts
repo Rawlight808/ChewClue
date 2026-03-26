@@ -15,7 +15,7 @@ const spaAuth = {
 }
 
 function createSafeClient(): SupabaseClient {
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || !supabaseUrl || !supabaseAnonKey) {
     console.error('ChewClue: Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY')
     return createClient('https://placeholder.invalid', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid', {
       auth: spaAuth,

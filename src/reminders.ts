@@ -44,7 +44,7 @@ function notify(title: string, body: string) {
       body,
     })
   } else {
-    new Notification(title, { body, icon: '/favicon.ico' })
+    new Notification(title, { body, icon: '/icon-192.png' })
   }
 }
 
