@@ -43,13 +43,10 @@ export function LogFoodPage() {
     ? format(new Date(), 'yyyy-MM-dd')
     : format(subDays(new Date(), 1), 'yyyy-MM-dd')
 
-  // Auto-tag when description changes
+  // Suggest tags from description (adds only; never clears — user removes tags explicitly)
   useEffect(() => {
     if (!description.trim()) {
-      if (autoApplied) {
-        setTags(new Set())
-        setAutoApplied(false)
-      }
+      setAutoApplied(false)
       return
     }
 
@@ -61,6 +58,8 @@ export function LogFoodPage() {
         return next
       })
       setAutoApplied(true)
+    } else {
+      setAutoApplied(false)
     }
   }, [description])
 
