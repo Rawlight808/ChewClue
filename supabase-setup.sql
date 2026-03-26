@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════
--- GutCheck database setup
+-- ChewClue database setup
 -- Run this in the Supabase SQL Editor
 -- ═══════════════════════════════════════════════════
 

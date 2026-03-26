@@ -53,7 +53,11 @@ export function TodayPage() {
           </button>
           <div>
             <h1 className="page-title">{isToday ? 'Today' : format(new Date(date + 'T12:00:00'), 'EEE, MMM d')}</h1>
-            <p className="page-subtitle">{format(new Date(date + 'T12:00:00'), 'EEEE, MMMM d, yyyy')}</p>
+            <p className="page-subtitle">
+              {isToday
+                ? 'Track meals, find triggers, feel better.'
+                : format(new Date(date + 'T12:00:00'), 'EEEE, MMMM d, yyyy')}
+            </p>
           </div>
           <button
             className="btn btn--ghost"

@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import type { SignUpResult } from '../hooks/useAuth'
 
 type Props = {
   onSignIn: (email: string, password: string) => Promise<Error | null>
-  onSignUp: (email: string, password: string) => Promise<Error | null>
+  onSignUp: (email: string, password: string) => Promise<SignUpResult>
 }
 
 export function AuthPage({ onSignIn, onSignUp }: Props) {
@@ -19,16 +20,18 @@ export function AuthPage({ onSignIn, onSignUp }: Props) {
     setConfirmMsg('')
     setLoading(true)
 
-    const err = isSignUp
-      ? await onSignUp(email, password)
-      : await onSignIn(email, password)
-
-    setLoading(false)
-
-    if (err) {
-      setError(err.message)
-    } else if (isSignUp) {
-      setConfirmMsg('Check your email for a confirmation link!')
+    if (isSignUp) {
+      const { error, needsEmailConfirmation } = await onSignUp(email, password)
+      setLoading(false)
+      if (error) {
+        setError(error.message)
+      } else if (needsEmailConfirmation) {
+        setConfirmMsg('Check your email for a confirmation link, then sign in here.')
+      }
+    } else {
+      const err = await onSignIn(email, password)
+      setLoading(false)
+      if (err) setError(err.message)
     }
   }
 

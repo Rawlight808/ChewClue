@@ -1,8 +1,22 @@
 import { format } from 'date-fns'
 import { getReminderSettings, getFoodEntriesForDate, getCheckinForDate } from './store'
 
-const LAST_EVENING_KEY = 'gutcheck_last_evening_reminder'
-const LAST_MORNING_KEY = 'gutcheck_last_morning_reminder'
+const LAST_EVENING_KEY = 'chewclue_last_evening_reminder'
+const LAST_MORNING_KEY = 'chewclue_last_morning_reminder'
+
+function migrateLegacyReminderKeys() {
+  const pairs: [string, string][] = [
+    ['gutcheck_last_evening_reminder', LAST_EVENING_KEY],
+    ['gutcheck_last_morning_reminder', LAST_MORNING_KEY],
+  ]
+  for (const [oldKey, newKey] of pairs) {
+    if (localStorage.getItem(newKey) === null) {
+      const v = localStorage.getItem(oldKey)
+      if (v !== null) localStorage.setItem(newKey, v)
+    }
+  }
+}
+migrateLegacyReminderKeys()
 const CHECK_INTERVAL_MS = 60_000 // check every minute
 
 function alreadySentToday(key: string): boolean {

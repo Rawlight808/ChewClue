@@ -1,8 +1,24 @@
 import type { DailyCheckin, FoodEntry, ReminderSettings } from './types'
 
-const FOOD_KEY = 'gutcheck_foods'
-const CHECKIN_KEY = 'gutcheck_checkins'
-const REMINDER_KEY = 'gutcheck_reminders'
+const FOOD_KEY = 'chewclue_foods'
+const CHECKIN_KEY = 'chewclue_checkins'
+const REMINDER_KEY = 'chewclue_reminders'
+
+/** One-time copy from pre-rename keys so existing users keep data */
+function migrateFromLegacyKeys() {
+  const pairs: [string, string][] = [
+    ['gutcheck_foods', FOOD_KEY],
+    ['gutcheck_checkins', CHECKIN_KEY],
+    ['gutcheck_reminders', REMINDER_KEY],
+  ]
+  for (const [oldKey, newKey] of pairs) {
+    if (localStorage.getItem(newKey) === null) {
+      const v = localStorage.getItem(oldKey)
+      if (v !== null) localStorage.setItem(newKey, v)
+    }
+  }
+}
+migrateFromLegacyKeys()
 
 function read<T>(key: string, fallback: T): T {
   try {
