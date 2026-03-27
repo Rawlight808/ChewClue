@@ -46,6 +46,22 @@ export type FoodEntry = {
 export type BowelRating = 1 | 2 | 3 | 4 | 5
 
 export type CheckinPeriod = 'morning' | 'evening'
+export type CheckinMetricDirection = 'higher_better' | 'higher_worse'
+export type BuiltInCheckinMetricKey = 'sleepQuality' | 'energy' | 'mood' | 'pain' | 'bowel'
+
+export type CheckinMetricTemplate = {
+  id: string
+  label: string
+  direction: CheckinMetricDirection
+  builtIn: boolean
+}
+
+export type ExtraCheckinMetric = {
+  id: string
+  label: string
+  value: number
+  direction: CheckinMetricDirection
+}
 
 export type DailyCheckin = {
   id: string
@@ -57,6 +73,9 @@ export type DailyCheckin = {
   pain: number           // 1–5 (1 = no pain, 5 = severe)
   bowel: BowelRating     // 1 = bad, 5 = great
   notes: string
+  customLabels?: Partial<Record<BuiltInCheckinMetricKey, string>>
+  customDirections?: Partial<Record<BuiltInCheckinMetricKey, CheckinMetricDirection>>
+  extraMetrics?: ExtraCheckinMetric[]
   createdAt: string
 }
 

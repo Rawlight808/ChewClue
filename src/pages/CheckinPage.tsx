@@ -3,7 +3,23 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { v4 as uuid } from 'uuid'
 import { cloudGetCheckinForDate, cloudSaveCheckin } from '../cloudStore'
-import type { BowelRating, CheckinPeriod, DailyCheckin } from '../types'
+import {
+  createCustomCheckinMetricId,
+  getCheckinMetricDisplay,
+  getCheckinMetricScaleLabels,
+  getCheckinMetricTemplate,
+  saveCheckinMetricTemplate,
+} from '../checkinCategories'
+import type {
+  BowelRating,
+  BuiltInCheckinMetricKey,
+  CheckinMetricDirection,
+  CheckinMetricTemplate,
+  CheckinPeriod,
+  DailyCheckin,
+} from '../types'
+
+type EditableMetric = CheckinMetricTemplate & { value: number }
 
 function RatingRow({ label, value, onChange, labels }: {
   label: string
@@ -35,6 +51,24 @@ function RatingRow({ label, value, onChange, labels }: {
   )
 }
 
+function metricValue(metrics: EditableMetric[], id: BuiltInCheckinMetricKey): number {
+  return metrics.find((metric) => metric.id === id)?.value ?? 0
+}
+
+function buildEditableMetrics(checkin?: DailyCheckin): EditableMetric[] {
+  if (checkin) {
+    return getCheckinMetricDisplay(checkin).map((metric) => ({
+      ...metric,
+      builtIn: !metric.id.startsWith('custom_'),
+    }))
+  }
+
+  return getCheckinMetricTemplate().map((metric) => ({
+    ...metric,
+    value: 0,
+  }))
+}
+
 export function CheckinPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -47,12 +81,10 @@ export function CheckinPage() {
 
   const [existing, setExisting] = useState<DailyCheckin | undefined>()
   const [loaded, setLoaded] = useState(false)
-  const [energy, setEnergy] = useState(0)
-  const [mood, setMood] = useState(0)
-  const [pain, setPain] = useState(0)
-  const [bowel, setBowel] = useState(0)
-  const [sleep, setSleep] = useState(0)
-  const [notes, setNotes] = useState('')
+  const [metrics, setMetrics] = useState<EditableMetric[]>([])
+  const [showCategoryEditor, setShowCategoryEditor] = useState(false)
+  const [newCategoryLabel, setNewCategoryLabel] = useState('')
+  const [newCategoryDirection, setNewCategoryDirection] = useState<CheckinMetricDirection>('higher_worse')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -60,40 +92,86 @@ export function CheckinPage() {
     cloudGetCheckinForDate(selectedDate, period).then((c) => {
       if (c) {
         setExisting(c)
-        setEnergy(c.energy)
-        setMood(c.mood)
-        setPain(c.pain)
-        setBowel(c.bowel)
-        setSleep(c.sleepQuality)
-        setNotes(c.notes)
+        setMetrics(buildEditableMetrics(c))
       } else {
         setExisting(undefined)
-        setEnergy(0)
-        setMood(0)
-        setPain(0)
-        setBowel(0)
-        setSleep(0)
-        setNotes('')
+        setMetrics(buildEditableMetrics())
       }
       setLoaded(true)
     })
   }, [selectedDate, period])
 
-  const canSave = energy > 0 && mood > 0 && pain > 0 && bowel > 0 && sleep > 0
+  const canSave = metrics.length > 0 && metrics.every((metric) => metric.value > 0 && metric.label.trim())
+
+  const updateMetric = (id: string, patch: Partial<EditableMetric>) => {
+    setMetrics((current) => current.map((metric) => (
+      metric.id === id ? { ...metric, ...patch } : metric
+    )))
+  }
+
+  const handleAddCategory = () => {
+    const label = newCategoryLabel.trim()
+    if (!label) return
+
+    setMetrics((current) => [
+      ...current,
+      {
+        id: createCustomCheckinMetricId(label, current.map((metric) => metric.id)),
+        label,
+        direction: newCategoryDirection,
+        builtIn: false,
+        value: 0,
+      },
+    ])
+    setNewCategoryLabel('')
+    setNewCategoryDirection('higher_worse')
+  }
+
+  const handleRemoveCategory = (id: string) => {
+    setMetrics((current) => current.filter((metric) => metric.id !== id))
+  }
 
   const handleSave = async () => {
     if (!canSave || saving) return
     setSaving(true)
+
+    const builtInMetrics = metrics.filter((metric) => metric.builtIn)
+    const extraMetrics = metrics
+      .filter((metric) => !metric.builtIn)
+      .map(({ id, label, value, direction }) => ({ id, label: label.trim(), value, direction }))
+
+    saveCheckinMetricTemplate(metrics.map(({ id, label, direction, builtIn }) => ({
+      id,
+      label: label.trim(),
+      direction,
+      builtIn,
+    })))
+
     await cloudSaveCheckin({
       id: existing?.id ?? uuid(),
       date: selectedDate,
       period,
-      sleepQuality: sleep,
-      energy,
-      mood,
-      pain,
-      bowel: bowel as BowelRating,
-      notes: notes.trim(),
+      sleepQuality: metricValue(builtInMetrics, 'sleepQuality'),
+      energy: metricValue(builtInMetrics, 'energy'),
+      mood: metricValue(builtInMetrics, 'mood'),
+      pain: metricValue(builtInMetrics, 'pain'),
+      bowel: metricValue(builtInMetrics, 'bowel') as BowelRating,
+      notes: '',
+      customLabels: {
+        sleepQuality: builtInMetrics.find((metric) => metric.id === 'sleepQuality')?.label.trim() ?? 'Sleep Quality',
+        energy: builtInMetrics.find((metric) => metric.id === 'energy')?.label.trim() ?? 'Energy Level',
+        mood: builtInMetrics.find((metric) => metric.id === 'mood')?.label.trim() ?? 'Mood',
+        pain: builtInMetrics.find((metric) => metric.id === 'pain')?.label.trim() ?? 'Pain Level',
+        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.label.trim() ?? 'Bowel Movement',
+      },
+      customDirections: {
+        sleepQuality: builtInMetrics.find((metric) => metric.id === 'sleepQuality')?.direction ?? 'higher_better',
+        energy: builtInMetrics.find((metric) => metric.id === 'energy')?.direction ?? 'higher_better',
+        mood: builtInMetrics.find((metric) => metric.id === 'mood')?.direction ?? 'higher_better',
+        pain: builtInMetrics.find((metric) => metric.id === 'pain')?.direction ?? 'higher_worse',
+        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.direction ?? 'higher_better',
+      },
+      extraMetrics,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     })
     setSaving(false)
@@ -112,21 +190,87 @@ export function CheckinPage() {
       </div>
 
       <div className="card">
-        <RatingRow label="Sleep Quality" value={sleep} onChange={setSleep} labels={['Poor', 'Great']} />
-        <RatingRow label="Energy Level" value={energy} onChange={setEnergy} labels={['Exhausted', 'Energized']} />
-        <RatingRow label="Mood" value={mood} onChange={setMood} labels={['Low', 'Great']} />
-        <RatingRow label="Pain Level" value={pain} onChange={setPain} labels={['None', 'Severe']} />
-        <RatingRow label="Bowel Movement" value={bowel} onChange={setBowel} labels={['Bad', 'Great']} />
-
-        <div style={{ marginTop: '0.5rem' }}>
-          <div className="card__label">Notes (optional)</div>
-          <textarea
-            className="input input--textarea"
-            placeholder="Anything else you noticed..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <div className="card__label" style={{ marginBottom: 0 }}>Categories</div>
+          <button
+            className="btn btn--ghost"
+            style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+            onClick={() => setShowCategoryEditor((current) => !current)}
+          >
+            {showCategoryEditor ? 'Done' : 'Customize'}
+          </button>
         </div>
+
+        {metrics.map((metric) => (
+          <RatingRow
+            key={metric.id}
+            label={metric.label}
+            value={metric.value}
+            onChange={(value) => updateMetric(metric.id, { value })}
+            labels={getCheckinMetricScaleLabels(metric.direction)}
+          />
+        ))}
+
+        {showCategoryEditor && (
+          <div style={{ marginTop: '0.75rem', borderTop: '1px solid var(--clr-border)', paddingTop: '0.75rem' }}>
+            {metrics.map((metric) => (
+              <div key={metric.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <input
+                  className="input"
+                  value={metric.label}
+                  onChange={(e) => updateMetric(metric.id, { label: e.target.value })}
+                  placeholder="Category name"
+                />
+                <select
+                  className="input"
+                  value={metric.direction}
+                  onChange={(e) => updateMetric(metric.id, { direction: e.target.value as CheckinMetricDirection })}
+                  style={{ minWidth: '9rem' }}
+                >
+                  <option value="higher_better">Higher is better</option>
+                  <option value="higher_worse">Higher is worse</option>
+                </select>
+                {metric.builtIn ? (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', width: '3rem', textAlign: 'center' }}>Core</span>
+                ) : (
+                  <button
+                    className="btn btn--ghost"
+                    style={{ padding: '0.35rem 0.55rem', color: 'var(--clr-red)' }}
+                    onClick={() => handleRemoveCategory(metric.id)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.5rem', alignItems: 'center', marginTop: '0.75rem' }}>
+              <input
+                className="input"
+                value={newCategoryLabel}
+                onChange={(e) => setNewCategoryLabel(e.target.value)}
+                placeholder="New category"
+              />
+              <select
+                className="input"
+                value={newCategoryDirection}
+                onChange={(e) => setNewCategoryDirection(e.target.value as CheckinMetricDirection)}
+                style={{ minWidth: '9rem' }}
+              >
+                <option value="higher_better">Higher is better</option>
+                <option value="higher_worse">Higher is worse</option>
+              </select>
+              <button
+                className="btn btn--primary"
+                style={{ padding: '0.45rem 0.8rem' }}
+                onClick={handleAddCategory}
+                disabled={!newCategoryLabel.trim()}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ marginTop: '1rem' }}>

@@ -53,6 +53,9 @@ export function getCheckins(): DailyCheckin[] {
   return read<DailyCheckin[]>(CHECKIN_KEY, []).map((checkin) => ({
     ...checkin,
     period: checkin.period ?? 'morning',
+    customLabels: checkin.customLabels ?? {},
+    customDirections: checkin.customDirections ?? {},
+    extraMetrics: checkin.extraMetrics ?? [],
   }))
 }
 

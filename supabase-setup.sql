@@ -26,6 +26,9 @@ create table daily_checkins (
   pain smallint not null check (pain between 1 and 5),
   bowel smallint not null check (bowel between 1 and 5),
   notes text not null default '',
+  custom_labels jsonb not null default '{}'::jsonb,
+  custom_directions jsonb not null default '{}'::jsonb,
+  extra_metrics jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   unique (user_id, date, period)
 );
@@ -42,6 +45,9 @@ create index daily_checkins_user_date on daily_checkins (user_id, date, period);
 -- create index if not exists daily_checkins_user_date on daily_checkins (user_id, date, period);
 -- alter table daily_checkins drop constraint if exists daily_checkins_period_check;
 -- alter table daily_checkins add constraint daily_checkins_period_check check (period in ('morning', 'evening'));
+-- alter table daily_checkins add column if not exists custom_labels jsonb not null default '{}'::jsonb;
+-- alter table daily_checkins add column if not exists custom_directions jsonb not null default '{}'::jsonb;
+-- alter table daily_checkins add column if not exists extra_metrics jsonb not null default '[]'::jsonb;
 
 -- Row Level Security: each user only sees their own data
 alter table food_entries enable row level security;

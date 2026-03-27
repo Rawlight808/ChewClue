@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { format, addDays, subDays } from 'date-fns'
 import { cloudGetFoodEntriesForDate, cloudGetCheckinsForDate, cloudDeleteFoodEntry } from '../cloudStore'
 import type { CheckinPeriod, FoodEntry, DailyCheckin, MealSlot } from '../types'
+import { getCheckinMetricDisplay } from '../checkinCategories'
 
 const MEAL_ORDER: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -16,8 +17,8 @@ const CHECKIN_SECTIONS: { period: CheckinPeriod; title: string; emptyLabel: stri
   { period: 'evening', title: 'Evening Check-In', emptyLabel: '+ Log Evening Check-In' },
 ]
 
-function ratingColor(val: number, invert = false) {
-  const v = invert ? 6 - val : val
+function ratingColor(val: number, higherIsWorse = false) {
+  const v = higherIsWorse ? 6 - val : val
   if (v >= 4) return 'var(--clr-green)'
   if (v >= 3) return 'var(--clr-orange)'
   return 'var(--clr-red)'
@@ -107,29 +108,18 @@ export function TodayPage() {
                 {checkin ? (
                   <>
                     <div className="checkin-summary">
-                      {([
-                        { key: 'energy', label: 'Energy' },
-                        { key: 'mood', label: 'Mood' },
-                        { key: 'pain', label: 'Pain' },
-                        { key: 'bowel', label: 'Bowel' },
-                        { key: 'sleepQuality', label: 'Sleep' },
-                      ] as const).map((s) => (
-                        <div key={s.key} className="checkin-stat">
+                      {getCheckinMetricDisplay(checkin).map((metric) => (
+                        <div key={metric.id} className="checkin-stat">
                           <div
                             className="checkin-stat__value"
-                            style={{ background: ratingColor(checkin[s.key], s.key === 'pain') }}
+                            style={{ background: ratingColor(metric.value, metric.direction === 'higher_worse') }}
                           >
-                            {checkin[s.key]}
+                            {metric.value}
                           </div>
-                          <span className="checkin-stat__label">{s.label}</span>
+                          <span className="checkin-stat__label">{metric.label}</span>
                         </div>
                       ))}
                     </div>
-                    {checkin.notes && (
-                      <p style={{ marginTop: '0.75rem', fontSize: '0.82rem', color: 'var(--clr-text-muted)' }}>
-                        {checkin.notes}
-                      </p>
-                    )}
                   </>
                 ) : (
                   <button className="btn btn--ghost btn--full" onClick={() => navigate(`/checkin?date=${date}&period=${section.period}`)}>

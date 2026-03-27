@@ -80,6 +80,9 @@ export async function cloudGetCheckins(): Promise<DailyCheckin[]> {
     pain: r.pain,
     bowel: r.bowel,
     notes: r.notes ?? '',
+    customLabels: r.custom_labels ?? {},
+    customDirections: r.custom_directions ?? {},
+    extraMetrics: r.extra_metrics ?? [],
     createdAt: r.created_at,
   }))
 }
@@ -102,6 +105,9 @@ export async function cloudGetCheckinsForDate(date: string): Promise<DailyChecki
     pain: r.pain,
     bowel: r.bowel,
     notes: r.notes ?? '',
+    customLabels: r.custom_labels ?? {},
+    customDirections: r.custom_directions ?? {},
+    extraMetrics: r.extra_metrics ?? [],
     createdAt: r.created_at,
   }))
 }
@@ -124,6 +130,9 @@ export async function cloudSaveCheckin(checkin: DailyCheckin): Promise<void> {
       pain: checkin.pain,
       bowel: checkin.bowel,
       notes: checkin.notes,
+      custom_labels: checkin.customLabels ?? {},
+      custom_directions: checkin.customDirections ?? {},
+      extra_metrics: checkin.extraMetrics ?? [],
       created_at: checkin.createdAt,
     })
 

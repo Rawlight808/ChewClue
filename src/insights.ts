@@ -1,7 +1,8 @@
 import { format, subDays, parseISO } from 'date-fns'
-import type { DailyCheckin, FoodEntry, FoodTag, TagDef, TriggerInsight } from './types'
+import type { BuiltInCheckinMetricKey, DailyCheckin, FoodEntry, FoodTag, TagDef, TriggerInsight } from './types'
 import { BUILT_IN_TAGS } from './types'
 import { getCustomTags } from './customTags'
+import { getCheckinMetricLabel } from './checkinCategories'
 
 type SymptomKey = 'energy' | 'pain' | 'bowel' | 'mood' | 'sleepQuality'
 
@@ -37,6 +38,7 @@ export function detectTriggers(
 
   const insights: TriggerInsight[] = []
   const symptoms: SymptomKey[] = ['energy', 'pain', 'bowel', 'mood', 'sleepQuality']
+  const latestMorningCheckin = morningCheckins[0]
 
   const allUsedTagIds = new Set<FoodTag>()
   for (const f of foods) for (const t of f.tags) allUsedTagIds.add(t)
@@ -81,7 +83,7 @@ export function detectTriggers(
       insights.push({
         tag: tag.id,
         label: tag.label,
-        symptom: SYMPTOM_LABELS[symptom],
+        symptom: getCheckinMetricLabel(latestMorningCheckin, symptom as BuiltInCheckinMetricKey, SYMPTOM_LABELS[symptom]),
         score,
         occurrences: withTag.length,
         avgSymptomAfter: Math.round(avgWith * 10) / 10,
