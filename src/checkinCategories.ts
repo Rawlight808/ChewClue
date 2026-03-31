@@ -73,6 +73,14 @@ export function saveCheckinMetricTemplate(metrics: CheckinMetricTemplate[]): voi
   }
 }
 
+export function resetCheckinMetricTemplate(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function createCustomCheckinMetricId(label: string, existingIds: string[]): string {
   const base = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'custom_metric'
   let id = `custom_${base}`

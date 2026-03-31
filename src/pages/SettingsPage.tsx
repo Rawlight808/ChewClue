@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { getReminderSettings, saveReminderSettings } from '../store'
+import { getReminderSettings, saveReminderSettings, resetLocalAppData } from '../store'
+import { clearCustomTags } from '../customTags'
+import { resetCheckinMetricTemplate } from '../checkinCategories'
+import { cloudResetAllData } from '../cloudStore'
 import { useAuthContext } from '../App'
 
 function useNotificationStatus() {
@@ -13,6 +16,8 @@ export function SettingsPage() {
   const { user, signOut } = useAuthContext()
   const [settings, setSettings] = useState(() => getReminderSettings())
   const [saved, setSaved] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetNotice, setResetNotice] = useState<string | null>(null)
   const { status: notifStatus, refresh: refreshNotif } = useNotificationStatus()
 
   const update = (patch: Partial<typeof settings>) => {
@@ -32,6 +37,29 @@ export function SettingsPage() {
     refreshNotif()
     if (result === 'granted') {
       new Notification('ChewClue', { body: 'Reminders are now enabled!' })
+    }
+  }
+
+  const handleReset = async () => {
+    const ok = window.confirm(
+      'Start over and delete all your meals, check-ins, and local preferences? This cannot be undone.',
+    )
+    if (!ok || resetting) return
+
+    setResetting(true)
+    setResetNotice(null)
+    try {
+      await cloudResetAllData()
+      resetLocalAppData()
+      clearCustomTags()
+      resetCheckinMetricTemplate()
+      const defaults = getReminderSettings()
+      setSettings(defaults)
+      setResetNotice('All data reset. You can start fresh now.')
+    } catch {
+      setResetNotice('Could not reset right now. Please try again.')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -134,9 +162,28 @@ export function SettingsPage() {
         <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.6rem' }}>
           {user?.email}
         </p>
+        <button
+          className="btn btn--ghost btn--full"
+          style={{ color: 'var(--clr-red)', marginBottom: '0.5rem' }}
+          onClick={handleReset}
+          disabled={resetting}
+        >
+          {resetting ? 'Resetting...' : 'Start Over (Reset All Data)'}
+        </button>
         <button className="btn btn--ghost btn--full" style={{ color: 'var(--clr-red)' }} onClick={signOut}>
           Sign Out
         </button>
+        {resetNotice && (
+          <p
+            style={{
+              marginTop: '0.6rem',
+              fontSize: '0.82rem',
+              color: resetNotice.startsWith('All data reset') ? 'var(--clr-green)' : 'var(--clr-red)',
+            }}
+          >
+            {resetNotice}
+          </p>
+        )}
       </div>
     </div>
   )

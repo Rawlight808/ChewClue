@@ -157,3 +157,19 @@ export async function cloudSaveCheckin(checkin: DailyCheckin): Promise<void> {
 
   if (error) console.error(error)
 }
+
+export async function cloudResetAllData(): Promise<void> {
+  const [{ error: foodError }, { error: checkinError }] = await Promise.all([
+    supabase
+      .from('food_entries')
+      .delete()
+      .neq('id', ''),
+    supabase
+      .from('daily_checkins')
+      .delete()
+      .neq('id', ''),
+  ])
+
+  if (foodError) throw foodError
+  if (checkinError) throw checkinError
+}

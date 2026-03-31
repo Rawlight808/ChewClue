@@ -97,3 +97,16 @@ export function getReminderSettings(): ReminderSettings {
 export function saveReminderSettings(settings: ReminderSettings) {
   write(REMINDER_KEY, settings)
 }
+
+export function resetLocalAppData() {
+  try {
+    localStorage.removeItem(FOOD_KEY)
+    localStorage.removeItem(CHECKIN_KEY)
+    localStorage.removeItem(REMINDER_KEY)
+    localStorage.removeItem('gutcheck_foods')
+    localStorage.removeItem('gutcheck_checkins')
+    localStorage.removeItem('gutcheck_reminders')
+  } catch {
+    /* storage unavailable */
+  }
+}

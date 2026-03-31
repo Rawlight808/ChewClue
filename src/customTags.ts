@@ -66,3 +66,7 @@ export function removeCustomTag(id: string): void {
   const tags = getCustomTags().filter((t) => t.id !== id)
   saveCustomTags(tags)
 }
+
+export function clearCustomTags(): void {
+  saveCustomTags([])
+}
