@@ -51,6 +51,16 @@ input, textarea, select {
   color: inherit;
 }
 
+/* Prevent iOS auto-zoom on form focus (appears as oversized UI). */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select,
+  .input {
+    font-size: 16px;
+  }
+}
+
 /* ── App shell ─────────────────────────────────────── */
 .app {
   display: flex;
