@@ -87,6 +87,8 @@ export function AuthPage({ onSignIn, onSignUp }: Props) {
         </button>
 
         <p className="auth-legal">
+          <Link to="/support">Support</Link>
+          <span aria-hidden="true"> · </span>
           <Link to="/privacy">Privacy Policy</Link>
         </p>
       </div>

@@ -178,18 +178,26 @@ export function SettingsPage() {
 
       <div className="card">
         <div className="card__label">Help</div>
-        <p style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.35rem' }}>
-          Support:{' '}
-          <a href="mailto:rawlightlabs@gmail.com" style={{ color: 'var(--clr-accent)' }}>
-            rawlightlabs@gmail.com
-          </a>
-        </p>
-        <Link
-          to="/privacy"
-          style={{ fontSize: '0.88rem', color: 'var(--clr-accent)', textDecoration: 'none', fontWeight: 600 }}
-        >
-          Privacy Policy
-        </Link>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Link
+            to="/support"
+            style={{ fontSize: '0.88rem', color: 'var(--clr-accent)', textDecoration: 'none', fontWeight: 600 }}
+          >
+            Support
+          </Link>
+          <Link
+            to="/privacy"
+            style={{ fontSize: '0.88rem', color: 'var(--clr-accent)', textDecoration: 'none', fontWeight: 600 }}
+          >
+            Privacy Policy
+          </Link>
+          <p style={{ fontSize: '0.82rem', color: 'var(--clr-text-muted)', margin: 0 }}>
+            Email:{' '}
+            <a href="mailto:rawlightlabs@gmail.com" style={{ color: 'var(--clr-accent)' }}>
+              rawlightlabs@gmail.com
+            </a>
+          </p>
+        </div>
       </div>
 
       <div className="card">

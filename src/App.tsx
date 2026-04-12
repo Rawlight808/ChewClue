@@ -11,6 +11,7 @@ import { CheckinPage } from './pages/CheckinPage'
 import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
+import { SupportPage } from './pages/SupportPage'
 import { refreshReminderScheduling, startReminderScheduler } from './reminders'
 import './App.css'
 
@@ -53,6 +54,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/support" element={<SupportPage />} />
         <Route
           path="*"
           element={
