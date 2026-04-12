@@ -24,7 +24,7 @@ export const AuthContext = createContext<AuthCtx>({ user: null, signOut: async (
 export const useAuthContext = () => useContext(AuthContext)
 
 export default function App() {
-  const { user, loading, signIn, signUp, signOut } = useAuth()
+  const { user, loading, signIn, signUp, signOut, resetPassword } = useAuth()
   const isNativeApp = Capacitor.isNativePlatform()
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function App() {
                 </div>
               </AuthContext.Provider>
             ) : (
-              <AuthPage onSignIn={signIn} onSignUp={signUp} />
+              <AuthPage onSignIn={signIn} onSignUp={signUp} onResetPassword={resetPassword} />
             )
           }
         />

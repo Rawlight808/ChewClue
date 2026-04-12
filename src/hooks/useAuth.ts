@@ -68,9 +68,19 @@ export function useAuth() {
     return error
   }
 
+  const resetPassword = async (email: string) => {
+    if (!isSupabaseConfigured) return missingConfigError()
+    const redirectTo =
+      typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname || '/'}` : undefined
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    })
+    return error
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
-  return { user, loading, signUp, signIn, signOut }
+  return { user, loading, signUp, signIn, signOut, resetPassword }
 }
