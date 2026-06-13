@@ -11,7 +11,7 @@ const rules: AutoTagRule[] = [
   { pattern: /taco|burrito|quesadilla|enchilada/i, tags: ['dairy', 'spicy'] },
   { pattern: /salsa/i, tags: ['tomato', 'spicy'] },
   { pattern: /coffee|espresso|latte|cappuccino|americano/i, tags: ['caffeine'] },
-  { pattern: /tea(?!\w)/i, tags: ['caffeine'] },
+  { pattern: /\btea\b/i, tags: ['caffeine'] },
   { pattern: /energy\s*drink|red\s*bull|monster/i, tags: ['caffeine', 'sugar'] },
   { pattern: /beer|wine|cocktail|whiskey|vodka|tequila|margarita/i, tags: ['alcohol'] },
   { pattern: /soda|coke|pepsi|sprite/i, tags: ['sugar'] },

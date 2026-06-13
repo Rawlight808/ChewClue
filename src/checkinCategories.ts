@@ -12,47 +12,77 @@ const BUILT_IN_METRICS: CheckinMetricTemplate[] = [
   { id: 'energy', label: 'Energy Level', direction: 'higher_better', builtIn: true },
   { id: 'mood', label: 'Mood', direction: 'higher_better', builtIn: true },
   { id: 'pain', label: 'Pain Level', direction: 'higher_worse', builtIn: true },
-  { id: 'bowel', label: 'Bowel Movement', direction: 'higher_better', builtIn: true },
+  { id: 'bowel', label: 'Constipation', direction: 'higher_worse', builtIn: true },
 ]
+
+// Core categories a fresh check-in starts with. The rest stay available
+// through the "Removed core categories" restore list.
+const DEFAULT_TEMPLATE_IDS = new Set(['sleepQuality', 'energy', 'bowel'])
+
+// Saved labels matching an old built-in default are treated as "never renamed"
+// so they pick up the current default label and direction.
+const LEGACY_BUILT_IN_LABELS: Record<string, string[]> = {
+  bowel: ['Bowel Movement'],
+}
 
 function builtInMetricLookup() {
   return new Map(BUILT_IN_METRICS.map((metric) => [metric.id, metric]))
 }
 
 function normalizeTemplate(raw: unknown): CheckinMetricTemplate[] {
+  // No saved template yet: start with all core categories. A saved template
+  // is authoritative — core categories the user removed stay removed.
+  if (!Array.isArray(raw)) return getDefaultCheckinMetricTemplate()
+
   const builtInLookup = builtInMetricLookup()
-  const saved = Array.isArray(raw)
-    ? raw.filter((item): item is CheckinMetricTemplate =>
-      Boolean(
-        item &&
-        typeof item === 'object' &&
-        'id' in item &&
-        'label' in item &&
-        'direction' in item,
-      ),
-    )
-    : []
+  const saved = raw.filter((item): item is CheckinMetricTemplate =>
+    Boolean(
+      item &&
+      typeof item === 'object' &&
+      'id' in item &&
+      'label' in item &&
+      'direction' in item,
+    ),
+  )
 
-  const extraMetrics = saved.filter((item) => !builtInLookup.has(item.id)).map((item) => ({
-    id: item.id,
-    label: item.label,
-    direction: (item.direction === 'higher_worse' ? 'higher_worse' : 'higher_better') as CheckinMetricDirection,
-    builtIn: false,
-  }))
+  const seen = new Set<string>()
+  const result: CheckinMetricTemplate[] = []
+  for (const item of saved) {
+    if (seen.has(item.id)) continue
+    seen.add(item.id)
 
-  const builtIns = BUILT_IN_METRICS.map((metric) => {
-    const savedMetric = saved.find((item) => item.id === metric.id)
-    return {
-      ...metric,
-      label: savedMetric?.label?.trim() || metric.label,
-      direction: savedMetric?.direction === 'higher_worse' ? 'higher_worse' : savedMetric?.direction === 'higher_better' ? 'higher_better' : metric.direction,
+    const builtIn = builtInLookup.get(item.id)
+    if (builtIn) {
+      const savedLabel = item.label?.trim()
+      const isLegacyDefault = !savedLabel || (LEGACY_BUILT_IN_LABELS[item.id] ?? []).includes(savedLabel)
+      result.push({
+        ...builtIn,
+        label: isLegacyDefault ? builtIn.label : savedLabel,
+        direction: isLegacyDefault
+          ? builtIn.direction
+          : item.direction === 'higher_worse' ? 'higher_worse' : item.direction === 'higher_better' ? 'higher_better' : builtIn.direction,
+      })
+    } else {
+      result.push({
+        id: item.id,
+        label: item.label,
+        direction: (item.direction === 'higher_worse' ? 'higher_worse' : 'higher_better') as CheckinMetricDirection,
+        builtIn: false,
+      })
     }
-  })
+  }
 
-  return [...builtIns, ...extraMetrics]
+  return result
 }
 
 export function getDefaultCheckinMetricTemplate(): CheckinMetricTemplate[] {
+  return BUILT_IN_METRICS
+    .filter((metric) => DEFAULT_TEMPLATE_IDS.has(metric.id))
+    .map((metric) => ({ ...metric }))
+}
+
+/** All core categories, including ones not in the default starting template. */
+export function getCoreCheckinMetrics(): CheckinMetricTemplate[] {
   return BUILT_IN_METRICS.map((metric) => ({ ...metric }))
 }
 

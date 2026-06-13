@@ -8,7 +8,7 @@ create table food_entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null default auth.uid(),
   date date not null,
-  meal text not null check (meal in ('breakfast', 'lunch', 'dinner', 'snack')),
+  meal text not null check (meal in ('breakfast', 'lunch', 'dinner', 'supplement')),
   description text not null,
   tags text[] not null default '{}',
   created_at timestamptz not null default now()
@@ -65,6 +65,11 @@ create index daily_checkins_user_date on daily_checkins (user_id, date, period);
 -- alter table daily_checkins alter column mood set default 0;
 -- alter table daily_checkins alter column pain set default 0;
 -- alter table daily_checkins alter column bowel set default 0;
+
+-- Rename the "snack" meal slot to "supplement" (run if your table predates this change):
+-- update food_entries set meal = 'supplement' where meal = 'snack';
+-- alter table food_entries drop constraint if exists food_entries_meal_check;
+-- alter table food_entries add constraint food_entries_meal_check check (meal in ('breakfast', 'lunch', 'dinner', 'supplement'));
 
 -- Row Level Security: each user only sees their own data
 alter table food_entries enable row level security;

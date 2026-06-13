@@ -10,6 +10,7 @@ import {
   getCheckinMetricDisplay,
   getCheckinMetricScaleLabels,
   getCheckinMetricTemplate,
+  getCoreCheckinMetrics,
   saveCheckinMetricTemplate,
 } from '../checkinCategories'
 import type {
@@ -57,23 +58,44 @@ function metricValue(metrics: EditableMetric[], id: BuiltInCheckinMetricKey): nu
   return metrics.find((metric) => metric.id === id)?.value ?? 0
 }
 
+// The "feeling fine" rating depends on the scale direction: 5 when higher is
+// better (great sleep/energy), 1 when higher is worse (no pain/constipation).
+function goodValue(direction: CheckinMetricDirection): number {
+  return direction === 'higher_worse' ? 1 : 5
+}
+
 function resolveDateParam(param: string | null): string {
   if (param && isValid(parseISO(param))) return param
   return format(new Date(), 'yyyy-MM-dd')
 }
 
-function buildEditableMetrics(checkin?: DailyCheckin): EditableMetric[] {
+// Sleep quality only makes sense when reflecting on last night, so it's a
+// morning-only question. Evening check-ins with a legacy value still show it.
+function isEveningExcluded(metricId: string, period: CheckinPeriod): boolean {
+  return period === 'evening' && metricId === 'sleepQuality'
+}
+
+function buildEditableMetrics(period: CheckinPeriod, checkin?: DailyCheckin): EditableMetric[] {
   if (checkin) {
-    return getCheckinMetricDisplay(checkin).map((metric) => ({
-      ...metric,
-      builtIn: !metric.id.startsWith('custom_'),
-    }))
+    const templateIds = new Set(getCheckinMetricTemplate().map((metric) => metric.id))
+    return getCheckinMetricDisplay(checkin)
+      // Hide core categories the user removed, unless this check-in has a value for them
+      .filter((metric) => metric.value > 0 || (
+        !isEveningExcluded(metric.id, period) &&
+        (metric.id.startsWith('custom_') || templateIds.has(metric.id))
+      ))
+      .map((metric) => ({
+        ...metric,
+        builtIn: !metric.id.startsWith('custom_'),
+      }))
   }
 
-  return getCheckinMetricTemplate().map((metric) => ({
-    ...metric,
-    value: 0,
-  }))
+  return getCheckinMetricTemplate()
+    .filter((metric) => !isEveningExcluded(metric.id, period))
+    .map((metric) => ({
+      ...metric,
+      value: 0,
+    }))
 }
 
 export function CheckinPage() {
@@ -99,10 +121,10 @@ export function CheckinPage() {
     cloudGetCheckinForDate(selectedDate, period).then((c) => {
       if (c) {
         setExisting(c)
-        setMetrics(buildEditableMetrics(c))
+        setMetrics(buildEditableMetrics(period, c))
       } else {
         setExisting(undefined)
-        setMetrics(buildEditableMetrics())
+        setMetrics(buildEditableMetrics(period))
       }
       setLoaded(true)
     })
@@ -140,6 +162,25 @@ export function CheckinPage() {
     setMetrics((current) => current.filter((metric) => metric.id !== id))
   }
 
+  const allGood = total > 0 && metrics.every((metric) => metric.value === goodValue(metric.direction))
+
+  const handleAllGood = () => {
+    setMetrics((current) => current.map((metric) => ({
+      ...metric,
+      value: goodValue(metric.direction),
+    })))
+  }
+
+  const removedCoreMetrics = getCoreCheckinMetrics().filter(
+    (builtIn) =>
+      !isEveningExcluded(builtIn.id, period) &&
+      !metrics.some((metric) => metric.id === builtIn.id),
+  )
+
+  const handleRestoreCategory = (metric: CheckinMetricTemplate) => {
+    setMetrics((current) => [...current, { ...metric, value: 0 }])
+  }
+
   const handleSave = async () => {
     if (!canSave || saving) return
     setSaving(true)
@@ -149,12 +190,19 @@ export function CheckinPage() {
       .filter((metric) => !metric.builtIn)
       .map(({ id, label, value, direction }) => ({ id, label: label.trim(), value, direction }))
 
-    saveCheckinMetricTemplate(metrics.map(({ id, label, direction, builtIn }) => ({
+    const templateFromMetrics = metrics.map(({ id, label, direction, builtIn }) => ({
       id,
       label: label.trim(),
       direction,
       builtIn,
-    })))
+    }))
+    // Morning-only categories aren't shown in evening check-ins, so carry them
+    // over from the saved template instead of dropping them.
+    const preservedMetrics = getCheckinMetricTemplate().filter((metric) =>
+      isEveningExcluded(metric.id, period) &&
+      !templateFromMetrics.some((item) => item.id === metric.id),
+    )
+    saveCheckinMetricTemplate([...preservedMetrics, ...templateFromMetrics])
 
     await cloudSaveCheckin({
       id: existing?.id ?? uuid(),
@@ -171,14 +219,14 @@ export function CheckinPage() {
         energy: builtInMetrics.find((metric) => metric.id === 'energy')?.label.trim() ?? 'Energy Level',
         mood: builtInMetrics.find((metric) => metric.id === 'mood')?.label.trim() ?? 'Mood',
         pain: builtInMetrics.find((metric) => metric.id === 'pain')?.label.trim() ?? 'Pain Level',
-        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.label.trim() ?? 'Bowel Movement',
+        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.label.trim() ?? 'Constipation',
       },
       customDirections: {
         sleepQuality: builtInMetrics.find((metric) => metric.id === 'sleepQuality')?.direction ?? 'higher_better',
         energy: builtInMetrics.find((metric) => metric.id === 'energy')?.direction ?? 'higher_better',
         mood: builtInMetrics.find((metric) => metric.id === 'mood')?.direction ?? 'higher_better',
         pain: builtInMetrics.find((metric) => metric.id === 'pain')?.direction ?? 'higher_worse',
-        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.direction ?? 'higher_better',
+        bowel: builtInMetrics.find((metric) => metric.id === 'bowel')?.direction ?? 'higher_worse',
       },
       extraMetrics,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
@@ -242,6 +290,16 @@ export function CheckinPage() {
         </div>
       )}
 
+      {total > 0 && (
+        <button
+          className={`btn btn--full ${allGood ? 'btn--primary' : 'btn--ghost'}`}
+          onClick={handleAllGood}
+          style={{ marginBottom: '0.75rem' }}
+        >
+          {allGood ? '✓ All good' : 'All good — I feel fine in every category'}
+        </button>
+      )}
+
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
           <div className="card__label" style={{ marginBottom: 0 }}>Categories</div>
@@ -283,19 +341,35 @@ export function CheckinPage() {
                   <option value="higher_better">Higher is better</option>
                   <option value="higher_worse">Higher is worse</option>
                 </select>
-                {metric.builtIn ? (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', width: '3rem', textAlign: 'center' }}>Core</span>
-                ) : (
-                  <button
-                    className="btn btn--ghost"
-                    style={{ padding: '0.35rem 0.55rem', color: 'var(--clr-red)' }}
-                    onClick={() => handleRemoveCategory(metric.id)}
-                  >
-                    Remove
-                  </button>
-                )}
+                <button
+                  className="btn btn--ghost"
+                  style={{ padding: '0.35rem 0.55rem', color: 'var(--clr-red)' }}
+                  onClick={() => handleRemoveCategory(metric.id)}
+                >
+                  Remove
+                </button>
               </div>
             ))}
+
+            {removedCoreMetrics.length > 0 && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)', marginBottom: '0.4rem' }}>
+                  Removed core categories
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {removedCoreMetrics.map((metric) => (
+                    <button
+                      key={metric.id}
+                      className="btn btn--ghost"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.78rem' }}
+                      onClick={() => handleRestoreCategory(metric)}
+                    >
+                      + {metric.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.5rem', alignItems: 'center', marginTop: '0.75rem' }}>
               <input

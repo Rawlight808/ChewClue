@@ -6,15 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && cp dist/index.html dist/404.html",
-    "build:mobile": "npm run build && npx cap sync ios",
+    "build:mobile": "npm run build && npx cap sync",
+    "build:ios": "npm run build && npx cap sync ios",
+    "build:android": "npm run build && npx cap sync android",
     "cap:sync": "npx cap sync",
     "cap:copy": "npx cap copy",
     "ios:open": "npx cap open ios",
+    "android:open": "npx cap open android",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "screenshots": "node scripts/app-store-screenshots.mjs",
+    "screenshots:install": "playwright install chromium"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.2",
     "@capacitor/core": "^8.3.0",
     "@capacitor/ios": "^8.3.0",
     "@capacitor/local-notifications": "^8.0.2",
@@ -39,6 +45,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "gh-pages": "^6.3.0",
     "globals": "^17.4.0",
+    "playwright": "^1.57.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "vite": "^8.0.1"

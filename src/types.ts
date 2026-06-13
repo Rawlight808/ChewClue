@@ -1,4 +1,4 @@
-export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'supplement'
 
 export type FoodTag = string
 
@@ -86,12 +86,15 @@ export type ReminderSettings = {
   morningReminderTime: string
 }
 
+export type TriggerLag = 'same_day' | 'next_morning'
+
 export type TriggerInsight = {
   tag: FoodTag
   label: string
   symptom: string
   score: number        // 0–1 confidence
   occurrences: number
-  avgSymptomAfter: number
-  avgSymptomWithout: number
+  lag: TriggerLag      // which comparison won: same-evening or next-morning
+  avgSymptomAfter: number   // normalized 1–5, higher = worse
+  avgSymptomWithout: number // normalized 1–5, higher = worse
 }

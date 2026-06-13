@@ -31,3 +31,21 @@ ios/DerivedData
 ios/App/Pods
 *.xcworkspace/xcuserdata
 *.xcodeproj/xcuserdata
+
+# Android / Capacitor
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/build
+android/build
+android/.gradle
+android/.idea
+android/captures
+android/local.properties
+android/app/release
+android/key.properties
+*.keystore
+*.jks
+
+# Local App Store screenshot output (remove this line to commit PNGs)
+screenshots/app-store/*.png

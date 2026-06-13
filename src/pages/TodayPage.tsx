@@ -10,7 +10,7 @@ const MEAL_ORDER: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
   { slot: 'lunch', label: 'Lunch', emoji: '☀️' },
   { slot: 'dinner', label: 'Dinner', emoji: '🌙' },
-  { slot: 'snack', label: 'Snacks', emoji: '🍿' },
+  { slot: 'supplement', label: 'Supplements', emoji: '💊' },
 ]
 
 const CHECKIN_SECTIONS: { period: CheckinPeriod; title: string; emptyLabel: string }[] = [

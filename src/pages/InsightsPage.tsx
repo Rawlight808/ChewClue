@@ -92,6 +92,7 @@ export function InsightsPage() {
                 </div>
                 <p className="insight-detail">
                   {ins.occurrences} day{ins.occurrences === 1 ? '' : 's'} with this food &middot;
+                  felt {ins.lag === 'same_day' ? 'same evening' : 'next morning'} &middot;
                   Avg {ins.symptom.toLowerCase()}: {ins.avgSymptomAfter} (with) vs {ins.avgSymptomWithout} (without)
                 </p>
               </div>

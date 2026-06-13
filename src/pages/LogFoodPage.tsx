@@ -26,7 +26,7 @@ const MEALS: { slot: MealSlot; label: string; emoji: string }[] = [
   { slot: 'breakfast', label: 'Breakfast', emoji: '🌅' },
   { slot: 'lunch', label: 'Lunch', emoji: '☀️' },
   { slot: 'dinner', label: 'Dinner', emoji: '🌙' },
-  { slot: 'snack', label: 'Snack', emoji: '🍿' },
+  { slot: 'supplement', label: 'Supplement', emoji: '💊' },
 ]
 
 const TAG_ICON: Record<string, string> = {
@@ -64,6 +64,9 @@ export function LogFoodPage() {
   const [showAddTag, setShowAddTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [autoApplied, setAutoApplied] = useState(false)
+  // Tags added by auto-tagging (vs picked by hand) and suggestions the user dismissed
+  const autoAddedRef = useRef<Set<string>>(new Set())
+  const dismissedSuggestionsRef = useRef<Set<string>>(new Set())
   const toast = useToast()
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -115,25 +118,42 @@ export function LogFoodPage() {
 
   useEffect(() => {
     if (loadingEntry) return
-    if (!description.trim()) {
-      setAutoApplied(false)
-      return
+    const suggested = description.trim() ? getAutoTags(description) : new Set<string>()
+
+    setTags((prev) => {
+      const next = new Set(prev)
+      // Drop auto-added tags that no longer match (e.g. "stea" matched tea,
+      // but "steak" doesn't). Manually picked tags are never touched.
+      for (const t of autoAddedRef.current) {
+        if (!suggested.has(t)) next.delete(t)
+      }
+      for (const t of suggested) {
+        if (!next.has(t) && !dismissedSuggestionsRef.current.has(t)) next.add(t)
+      }
+      return next
+    })
+
+    for (const t of [...autoAddedRef.current]) {
+      if (!suggested.has(t)) autoAddedRef.current.delete(t)
+    }
+    for (const t of suggested) {
+      if (!tags.has(t) && !dismissedSuggestionsRef.current.has(t)) autoAddedRef.current.add(t)
     }
 
-    const suggested = getAutoTags(description)
-    if (suggested.size > 0) {
-      setTags((prev) => {
-        const next = new Set(prev)
-        for (const t of suggested) next.add(t)
-        return next
-      })
-      setAutoApplied(true)
-    } else {
-      setAutoApplied(false)
-    }
+    setAutoApplied(suggested.size > 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, loadingEntry])
 
   const toggleTag = (tag: string) => {
+    if (tags.has(tag)) {
+      // Removing an auto-added tag counts as dismissing the suggestion,
+      // so it doesn't immediately get re-applied on the next keystroke.
+      if (autoAddedRef.current.has(tag)) dismissedSuggestionsRef.current.add(tag)
+      autoAddedRef.current.delete(tag)
+    } else {
+      dismissedSuggestionsRef.current.delete(tag)
+      autoAddedRef.current.delete(tag)
+    }
     setTags((prev) => {
       const next = new Set(prev)
       next.has(tag) ? next.delete(tag) : next.add(tag)
