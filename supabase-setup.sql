@@ -37,39 +37,11 @@ create table daily_checkins (
 create index food_entries_user_date on food_entries (user_id, date);
 create index daily_checkins_user_date on daily_checkins (user_id, date, period);
 
--- If you already created the table before this update, run this migration too:
--- alter table daily_checkins add column if not exists period text not null default 'morning';
--- alter table daily_checkins drop constraint if exists daily_checkins_user_id_date_key;
--- alter table daily_checkins add constraint daily_checkins_user_date_period_key unique (user_id, date, period);
--- drop index if exists daily_checkins_user_date;
--- create index if not exists daily_checkins_user_date on daily_checkins (user_id, date, period);
--- alter table daily_checkins drop constraint if exists daily_checkins_period_check;
--- alter table daily_checkins add constraint daily_checkins_period_check check (period in ('morning', 'evening'));
--- alter table daily_checkins add column if not exists custom_labels jsonb not null default '{}'::jsonb;
--- alter table daily_checkins add column if not exists custom_directions jsonb not null default '{}'::jsonb;
--- alter table daily_checkins add column if not exists extra_metrics jsonb not null default '[]'::jsonb;
-
--- Allow partial check-ins (0 = unanswered):
--- alter table daily_checkins drop constraint if exists daily_checkins_sleep_quality_check;
--- alter table daily_checkins add constraint daily_checkins_sleep_quality_check check (sleep_quality between 0 and 5);
--- alter table daily_checkins drop constraint if exists daily_checkins_energy_check;
--- alter table daily_checkins add constraint daily_checkins_energy_check check (energy between 0 and 5);
--- alter table daily_checkins drop constraint if exists daily_checkins_mood_check;
--- alter table daily_checkins add constraint daily_checkins_mood_check check (mood between 0 and 5);
--- alter table daily_checkins drop constraint if exists daily_checkins_pain_check;
--- alter table daily_checkins add constraint daily_checkins_pain_check check (pain between 0 and 5);
--- alter table daily_checkins drop constraint if exists daily_checkins_bowel_check;
--- alter table daily_checkins add constraint daily_checkins_bowel_check check (bowel between 0 and 5);
--- alter table daily_checkins alter column sleep_quality set default 0;
--- alter table daily_checkins alter column energy set default 0;
--- alter table daily_checkins alter column mood set default 0;
--- alter table daily_checkins alter column pain set default 0;
--- alter table daily_checkins alter column bowel set default 0;
-
--- Rename the "snack" meal slot to "supplement" (run if your table predates this change):
--- update food_entries set meal = 'supplement' where meal = 'snack';
--- alter table food_entries drop constraint if exists food_entries_meal_check;
--- alter table food_entries add constraint food_entries_meal_check check (meal in ('breakfast', 'lunch', 'dinner', 'supplement'));
+-- ── Upgrading an existing database? ──────────────────
+-- This file is the full schema for a FRESH project. If your database was
+-- created with an older version, do NOT re-run this file — instead apply the
+-- incremental migrations in supabase/migrations/ in numbered order.
+-- See supabase/migrations/README.md.
 
 -- Row Level Security: each user only sees their own data
 alter table food_entries enable row level security;
