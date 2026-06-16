@@ -7,6 +7,7 @@ import { cloudSaveFoodEntry, cloudGetFoodEntry, cloudGetFoodEntriesForDate, clou
 import { BUILT_IN_TAGS } from '../types'
 import { getCustomTags, addCustomTag, removeCustomTag } from '../customTags'
 import { getAutoTags } from '../autoTags'
+import { learnMeal, getLearnedTagsFor } from '../learnedMeals'
 import type { FoodEntry, MealSlot, TagDef } from '../types'
 
 function useToast() {
@@ -64,6 +65,7 @@ export function LogFoodPage() {
   const [showAddTag, setShowAddTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const [autoApplied, setAutoApplied] = useState(false)
+  const [learnedApplied, setLearnedApplied] = useState(false)
   // Tags added by auto-tagging (vs picked by hand) and suggestions the user dismissed
   const autoAddedRef = useRef<Set<string>>(new Set())
   const dismissedSuggestionsRef = useRef<Set<string>>(new Set())
@@ -118,7 +120,17 @@ export function LogFoodPage() {
 
   useEffect(() => {
     if (loadingEntry) return
-    const suggested = description.trim() ? getAutoTags(description) : new Set<string>()
+    const trimmed = description.trim()
+    // Tags learned from a past identical meal, plus keyword auto-tags. Filter
+    // learned tags to ones that still exist (a custom tag may have been deleted).
+    const knownIds = new Set(allTags.map((t) => t.id))
+    const learnedTags = trimmed
+      ? getLearnedTagsFor(description).filter((id) => knownIds.has(id))
+      : []
+    const suggested = new Set<string>([
+      ...(trimmed ? getAutoTags(description) : []),
+      ...learnedTags,
+    ])
 
     setTags((prev) => {
       const next = new Set(prev)
@@ -141,6 +153,7 @@ export function LogFoodPage() {
     }
 
     setAutoApplied(suggested.size > 0)
+    setLearnedApplied(learnedTags.length > 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [description, loadingEntry])
 
@@ -199,6 +212,9 @@ export function LogFoodPage() {
       createdAt: originalCreatedAt ?? new Date().toISOString(),
     })
 
+    // Remember this meal's tags so the same description auto-tags next time
+    learnMeal(description, [...tags])
+
     setSaving(false)
     await refreshDateEntries()
     if (isEdit) {
@@ -212,6 +228,7 @@ export function LogFoodPage() {
     setDescription('')
     setTags(new Set([...tags].filter((tagId) => tagId.startsWith('custom_'))))
     setAutoApplied(false)
+    setLearnedApplied(false)
     setEntryId(uuid())
     setOriginalCreatedAt(null)
     inputRef.current?.focus()
@@ -329,7 +346,7 @@ export function LogFoodPage() {
         />
         {autoApplied && tags.size > 0 && (
           <p style={{ fontSize: '0.75rem', color: 'var(--clr-accent)', marginTop: '0.35rem' }}>
-            Auto-tagged based on what you typed
+            {learnedApplied ? 'Auto-tagged from a meal you saved before' : 'Auto-tagged based on what you typed'}
           </p>
         )}
       </div>
